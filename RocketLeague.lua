@@ -2,7 +2,7 @@
 -- by Hexarobi
 -- credit to WiriScript's Vehicle Acrobatics
 
-local SCRIPT_VERSION = "0.3"
+local SCRIPT_VERSION = "0.4"
 
 ---
 --- Auto Updater
@@ -31,14 +31,14 @@ util.require_natives("3095a")
 
 local config = {
     forces={
-        --{
-        --    name="Jump",
-        --    control_input=224,
-        --    apply_force={
-        --        vector={x=0, y=0, z=10.71},
-        --        offset={x=0, y=0, z=0},
-        --    }
-        --},
+        {
+            name="Jump",
+            control_input=21,
+            apply_force={
+                vector={x=0, y=0, z=10.71},
+                offset={x=0, y=0, z=0},
+            }
+        },
         {
             name="Left Flip",
             control_input=234,
@@ -88,11 +88,11 @@ local menus = {}
 local function rocket_league_tick()
     local vehicle = rl.get_vehicle_player_is_in(players.user())
     if vehicle then
-        rl.disable_controls()
         if (not menu.is_open())
             and ENTITY.DOES_ENTITY_EXIST(vehicle)
             and VEHICLE.IS_VEHICLE_ON_ALL_WHEELS(vehicle)
         then
+            rl.disable_controls()
             local force = rl.get_triggered_force()
             if force and entities.request_control(vehicle) then
                 rl.apply_force(vehicle, force)
@@ -110,24 +110,29 @@ rl.default_force = function(force)
     if force.apply_force == nil then force.apply_force = {} end
     if force.apply_force.vector == nil then force.apply_force.vector = {x=0,y=0,z=0} end
     if force.apply_force.offset == nil then force.apply_force.offset = {x=0,y=0,z=0} end
+    if force.apply_force.force_flag == nil then force.apply_force.force_flag = 1 end
+    if force.apply_force.bone_index == nil then force.apply_force.bone_index = 1 end
+    if force.apply_force.is_local == nil then force.apply_force.is_local = false end
+    if force.apply_force.ignore_up_vec == nil then force.apply_force.ignore_up_vec = true end
+    if force.apply_force.is_mass_relative == nil then force.apply_force.is_mass_relative = true end
 end
 
 rl.get_triggered_force = function()
     for _, force in config.forces do
-        if PAD.IS_DISABLED_CONTROL_JUST_PRESSED(2, force.control_input) then
+        if force.enabled and PAD.IS_DISABLED_CONTROL_JUST_PRESSED(2, force.control_input) then
             return force
         end
     end
 end
 
 rl.apply_force = function(vehicle, force)
-    local vector = force.apply_force.vector or {x=0,y=0,z=0}
-    local offset = force.apply_force.offset or {x=0,y=0,z=0}
     ENTITY.APPLY_FORCE_TO_ENTITY(
-        vehicle, 1,
-        vector.x, vector.y, vector.z,
-        offset.x, offset.y, offset.z,
-        1, false, true, true, true, true
+        vehicle, force.apply_force.force_flag,
+        force.apply_force.vector.x, force.apply_force.vector.y, force.apply_force.vector.z,
+        force.apply_force.offset.x, force.apply_force.offset.y, force.apply_force.offset.z,
+        force.apply_force.bone_index, force.apply_force.is_local,
+        force.apply_force.ignore_up_vec, force.apply_force.is_mass_relative,
+        true, true
     )
 end
 
@@ -169,6 +174,19 @@ for _, force in config.forces do
     force.menu:slider("Control Input", {"rlcontrolinput"..force.name}, "", 1, 360, force.control_input, 1, function(value)
         force.control_input = value
     end)
+
+    force.menu:slider("Force Flag", {"rlforceflag"..force.name}, "", 0, 7, force.apply_force.force_flag, 1, function(value)
+        force.apply_force.force_flag = value
+    end)
+    force.menu:toggle("Local Vector Coords", {}, "", function(value)
+        force.apply_force.is_local = value
+    end, force.apply_force.is_local)
+    force.menu:toggle("Ignore Up Vector", {}, "", function(value)
+        force.apply_force.ignore_up_vec = value
+    end, force.apply_force.ignore_up_vec)
+    force.menu:toggle("Is Mass Relative", {}, "", function(value)
+        force.apply_force.is_mass_relative = value
+    end, force.apply_force.is_mass_relative)
 
     force.menu:divider("Force Vector")
     force.menu:slider_float("X", {"rlforcevectorx"..force.name}, "", -2500, 2500, math.floor(force.apply_force.vector.x * 100), 1, function(value)
