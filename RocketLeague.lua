@@ -1,7 +1,7 @@
 -- RocketLeague
 -- by Hexarobi
 
-local SCRIPT_VERSION = "0.1"
+local SCRIPT_VERSION = "0.2"
 
 ---
 --- Auto Updater
@@ -24,17 +24,32 @@ end
 
 util.require_natives("3095a")
 
-local function get_vehicle_player_is_in(player)
-    local targetPed = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player)
-    if PED.IS_PED_IN_ANY_VEHICLE(targetPed, false) then
-        return PED.GET_VEHICLE_PED_IS_IN(targetPed, false)
-    end
-    return 0
-end
+---
+--- Config
+---
+
+local config = {
+    controls={
+        flip=20
+    }
+}
+
+---
+--- Variables
+---
+
+local rl = {}
+local state = {}
+local menus = {}
+
+---
+--- Main Tick Function
+---
 
 local function rocket_league_tick()
-    local vehicle = get_vehicle_player_is_in(players.user())
-    if vehicle and PAD.IS_DISABLED_CONTROL_PRESSED(2, 174) then
+    PAD.DISABLE_CONTROL_ACTION(2, config.controls.flip, false)
+    local vehicle = rl.get_vehicle_player_is_in(players.user())
+    if vehicle and PAD.IS_DISABLED_CONTROL_JUST_PRESSED(2, config.controls.flip) then
         if ENTITY.DOES_ENTITY_EXIST(vehicle)
             --and VEHICLE.IS_VEHICLE_ON_ALL_WHEELS(vehicle)
             and entities.request_control(vehicle)
@@ -44,4 +59,31 @@ local function rocket_league_tick()
     end
 end
 
-util.create_tick_handler(rocket_league_tick)
+---
+--- Functions
+---
+
+rl.get_vehicle_player_is_in = function(player)
+    local targetPed = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player)
+    if PED.IS_PED_IN_ANY_VEHICLE(targetPed, false) then
+        return PED.GET_VEHICLE_PED_IS_IN(targetPed, false)
+    end
+    return 0
+end
+
+---
+--- Menu
+---
+
+menu.my_root():toggle_loop("Rocket Controls Enabled", {}, "", function()
+    rocket_league_tick()
+end)
+
+---
+--- Settings Menu
+---
+
+menus.settings = menu.my_root():list("Settings", {}, "Configuration options for this script.")
+menus.settings:slider("Flip Key", {"rlflipkey"}, "Which input opens the menu. Reference: https://docs.fivem.net/docs/game-references/controls/", 1, 360, config.controls.flip, 1, function(value)
+    config.controls.flip = value
+end)
