@@ -1,4 +1,26 @@
 -- RocketLeague
+-- by Hexarobi
+
+local SCRIPT_VERSION = "0.1"
+
+---
+--- Auto Updater
+---
+
+local auto_update_config = {
+    source_url="https://raw.githubusercontent.com/hexarobi/stand-lua-rocketleague/main/RocketLeague.lua",
+    script_relpath=SCRIPT_RELPATH,
+}
+
+util.ensure_package_is_installed('lua/auto-updater')
+local auto_updater = require('auto-updater')
+if auto_updater == true then
+    auto_updater.run_auto_update(auto_update_config)
+end
+
+---
+--- Dependencies
+---
 
 util.require_natives("3095a")
 
