@@ -1,5 +1,6 @@
 -- RocketLeague
 -- by Hexarobi
+-- credit to WiriScript's Vehicle Acrobatics
 
 local SCRIPT_VERSION = "0.3"
 
